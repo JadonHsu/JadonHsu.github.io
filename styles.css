@@ -29,9 +29,9 @@ body {
 .light {
   --clr-bg: #FFFFFF;
   --clr-bg-alt: #fff;
-  --clr-fg: #555;
+  --clr-fg: #8B2942;
   --clr-fg-alt: #575e50;
-  --clr-primary: #0080FE;
+  --clr-primary: #005488;
   --shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 
