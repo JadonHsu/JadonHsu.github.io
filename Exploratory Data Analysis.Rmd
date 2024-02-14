@@ -1,0 +1,150 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(scales)
+library(RSocrata) # for reading in data
+library(lubridate) # for dealing with date-time data
+```
+
+# Background
+
+We're going to explore a large data set or traffic crashes to learn about what factors are connected with injuries. We will use data from the city of [Chicago's open data portal](https://data.cityofchicago.org/Transportation/Traffic-Crashes-Crashes/85ca-t3if/about_data). (This activity is derived from a [blog post](https://juliasilge.com/blog/chicago-traffic-model/) by Julia Silge)
+
+```{r}
+years_ago <- mdy("01/01/2022") # data from last 2 years. May take time to load!
+crash_url <- glue::glue("https://data.cityofchicago.org/Transportation/Traffic-Crashes-Crashes/85ca-t3if?$where=CRASH_DATE >= '{years_ago}'")
+crash_raw <- as_tibble(read.socrata(crash_url)) # a new way to read in data, don't worry about it!
+```
+
+This dataset is pretty crazy! Take a look at it in the viewer, and then let's do some data munging to get it into a nicer form. 
+
+  -create a variable called `injuries` which indicates if the crash involved injuries or not.
+  -create an unknown category for missing `report_type`s
+  -decide which other variables to keep
+  
+```{r}
+crash <- crash_raw %>%
+  arrange(desc(crash_date)) %>%
+  transmute(
+    injuries = as.factor(if_else(injuries_total > 0, "injuries", "none")),
+    longitude, latitude, lighting_condition, weather_condition, device_condition, traffic_control_device, first_crash_type, roadway_surface_cond, prim_contributory_cause, sec_contributory_cause, crash_month, crash_date, posted_speed_limit, crash_day_of_week, crash_month
+  )
+```
+
+###Question 1
+```{r}
+ggplot(data = crash, aes(x=longitude, y=latitude, color= injuries))+
+  geom_point()+ 
+  xlab("Longitude") +
+  ylab("Latitude") +
+  xlim(-88, -87.5) +
+  ylim(41.6, 42.1) +
+  ggtitle("Crashes Latitude vs Longitude")
+```
+###Question 2
+```{r}
+freq_table <- table(crash$ prim_contributory_cause)
+print(freq_table)
+crash_top <- crash %>% filter(prim_contributory_cause=="IMPROPER OVERTAKING/PASSING" | prim_contributory_cause == "FOLLOWING TOO CLOSELY" | prim_contributory_cause == "FAILING TO YIELD RIGHT-OF-WAY" | prim_contributory_cause == "FAILING TO REDUCE SPEED TO AVOID CRASH" | prim_contributory_cause == "DRIVING SKILLS/KNOWLEDGE/EXPERIENCE")
+ggplot(data = crash_top, aes(y=prim_contributory_cause))+
+  geom_bar(fill = "blue")+
+  theme(axis.text.y = element_text(angle = 0, hjust = 1)) + 
+  xlab("Number of Accidents") + 
+  ylab("Top 5 Causes") + 
+  labs(title="Top Causes of Injury")
+```
+###Question 3
+```{r}
+crashpr$Year <- year(crashpr$crash_date)
+crash_2022<- crashpr %>% filter(Year == "2022")
+crash_2023<- crashpr %>% filter(Year == "2023")
+ggplot(data = crash_2022, aes(x=crash_month, fill = injuries))+
+ geom_bar() + 
+  xlab("Crash Month in 2022") + 
+  ylab("Number of Crashes") + 
+   labs(title = "Injuries per Month from Crashes in 2022")
+ 
+ggplot(data = crash_2023, aes(x=crash_month, fill = injuries))+
+ geom_bar() +
+    xlab("Crash Month in 2023") + 
+  ylab("Number of Crashes") + 
+  labs(title = "Injuries per Month from Crashes in 2023")
+```
+###Question 4
+```{r}
+crash_rainy <- crash %>% filter(weather_condition == "RAIN" |  weather_condition == "FREEZING RAIN/DRIZZLE")
+crash_darkandrainy <- crash_rainy %>% filter(lighting_condition == "DARK" | lighting_condition == "DARKNESS, LIGHTED ROAD")
+crash_darkandrainy <- crash_darkandrainy %>% filter(injuries != "N/A")
+
+ggplot(data = crash_darkandrainy, aes(x=injuries, fill=injuries)) +
+  geom_bar() + 
+  xlab("Were there Injuries Sustained") + 
+  ylab("Number of Crashes") + 
+  labs(title = "Injuries Sustained in Dark and Rainy Conditions")
+```
+###Question 5
+```{r}
+
+crash_speed <- crash %>% filter(injuries == "injuries")
+ggplot(data = crash_speed, aes(x=posted_speed_limit, fill=roadway_surface_cond)) +
+  geom_bar() +
+  xlab("Speed Limit") + 
+  ylab("Number of Injuries") + 
+  labs(fill="Road Surface Condition", title = "Speed Limit vs. Injuries Sustained")
+  
+```
+
+## Exploratory Data Analysis
+
+Here's a few questions to get you started. 
+
+1. Take a look at crashes by latitude and longitude, colored by injuries. What do you notice?
+
+2. What are the most common contributing factors to a crash?
+
+3. How do crashes vary month by month? Compare crashes by month in 2022 to 2023.
+
+4. Are crashes more likely to cause injuries when it is rainy and dark? Use the variables `weather_condition` and `lighting_condition` to explore.
+
+5. Choose a question you want to explore, and create an appropriate visual.
+
+
+
+```{r}
+day_names = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+month_names = c("January", "Febuary", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+crash_practice <- crash_raw %>%  mutate(crash_raw, crash_day_of_week = day_names[crash_day_of_week])  
+crash_pr <- crash_practice %>%  mutate(crash_raw, crash_month = month_names[crash_month]) 
+
+head(crash_practice)
+crashpr <- crash_pr %>%
+  arrange(desc(crash_date)) %>%
+  transmute(
+    injuries = as.factor(if_else(injuries_total > 0, "injuries", "none")),
+    longitude, latitude, lighting_condition, weather_condition, device_condition, traffic_control_device, first_crash_type, roadway_surface_cond, prim_contributory_cause, sec_contributory_cause, crash_month, crash_date, posted_speed_limit, crash_day_of_week, crash_month
+  )
+
+
+```
+
+```{r}
+crashpr %>% filter(!is.na(injuries),  crash_month %in% c("December", "January")) %>% 
+  mutate(day_of_week = wday(crash_date, label=TRUE, abbr=TRUE), injuries = factor(injuries, levels = c("none", "injuries"), ordered = TRUE)) %>% group_by(day_of_week, injuries) %>%
+  summarize(count = n()) %>% 
+  ungroup(injuries) %>%
+  mutate(total = sum(count), rel_freq = count / total, label_y = 1-cumsum(rel_freq)) %>% 
+  
+  
+  
+ggplot(aes(x=day_of_week, y=rel_freq, fill=injuries)) + 
+  geom_bar(stat = "identity", alpha=0.8) + 
+  scale_fill_brewer(palette = "Set1", direction = -1) + 
+  geom_text(aes(y=rel_freq/2+ label_y, label=percent(rel_freq, accuracy = 0.01)), color="white") + 
+  scale_y_continuous(labels = scales::percent) + 
+  labs(x="", y="Relative Frequency")
+```
