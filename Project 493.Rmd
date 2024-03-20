@@ -1,0 +1,284 @@
+---
+title: "Top Performing 2023 Offenses' Fantasy Skill Position Players"
+author: "Jadon Hsu"
+date: "2024-02-27"
+output:
+  html_document: default
+  pdf_document: default
+---
+The Goal of this project was to examine whether being in a top 5 offense in a given year would have a positive outcome on a given skill position player's fantasy football stats. Would they perform higher than expected or does on field success not necessarily translate to fantasy football success? To do this, I analyzed the last 5 years of data and looked at the top 5 offenses from each year as well as the position players for each team. 
+```{r, echo = FALSE, message = FALSE}
+library(nflreadr)
+library(tidyverse)
+library(dplyr)
+library(ggrepel)
+library(plotly)
+library(teamcolors)
+```
+
+```{r, echo = FALSE, message = FALSE}
+total_roster <- load_rosters(
+  seasons = c(2011:2023),
+  file_type = getOption("nflreadr.prefer", default = "rds")
+)
+
+total_roster <- total_roster %>%
+  filter(position %in% c("WR", "TE"))
+
+total_roster <- total_roster %>% 
+  select("season", "position", "full_name", "gsis_id", "years_exp", "team")
+nflcolors <- teamcolors %>% filter(league=="nfl")
+```
+
+```{r, echo = FALSE, message = FALSE}
+ff_exp_all <- load_ff_opportunity(seasons = 2011:2023, stat_type = "weekly", model_version = "latest")
+
+ff_exp_all <- ff_exp_all %>%
+  group_by(player_id, season) %>%
+  mutate(games = n())
+
+col_to_sum <- c("total_fantasy_points", "total_fantasy_points_exp")
+
+
+wr_te_total_df <- ff_exp_all %>%
+  filter(position %in% c("WR", "TE")) %>%
+  group_by(player_id, season) %>%
+  summarize_at((col_to_sum), sum)
+
+#positive = above expectation
+wr_te_total_df <- wr_te_total_df %>%
+  mutate(diff = total_fantasy_points - total_fantasy_points_exp)
+
+wr_te_total_df$diff <- round(wr_te_total_df$diff, digits = 2)
+
+wr_te_total_df <- wr_te_total_df %>%
+  mutate(percent_over = 100 * round(total_fantasy_points / total_fantasy_points_exp, digits = 4))
+
+games_df <-ff_exp_all %>%
+  filter(position %in% c("WR", "TE")) %>%
+  group_by(player_id) %>%
+  select("games", "full_name", "player_id", "season")
+
+#need to keep unique ones... need it to be unique so that if someone like 
+#Davante plays 6 seasons, he should have 6 entries... rn its way too many. I don't know how unique works well enought to filter it this way 
+#think this should work, but I'm gonna have to get on wifi and reupload all the data frames
+games_df <- games_df %>%
+  group_by(player_id) %>%
+  distinct(season, .keep_all = TRUE)
+
+```
+
+```{r, echo = FALSE, message = FALSE}
+wr_te_total_df <- left_join(wr_te_total_df, games_df, by = c("player_id", "season"))
+```
+
+```{r, echo = FALSE, message = FALSE}
+
+total_roster <- rename(total_roster, player_id = gsis_id)
+```
+
+
+
+```{r, echo = FALSE, message = FALSE, include=FALSE}
+wr_te_total_df %>%
+  filter(player_id %in% total_roster$player_id)
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2011 <- total_roster %>% filter(season=="2011", team == "NO" | team == "DET" | team=="NE" | team == "GB" | team == "PHI")
+top_2011 <- top5_2011 %>% filter(team == "NO")
+wr_te_total_df_2011 <- inner_join(top5_2011, wr_te_total_df, by = "player_id")
+wr_te_total_df_2011 <- wr_te_total_df_2011 %>% filter(season.y == "2011")
+```
+
+```{r, echo = FALSE, message = FALSE}
+#ggplot(data = wr_te_total_df_2011, aes(x=diff, y=full_name, fill=team)) + 
+ # geom_bar(stat = "identity") + 
+  #labs(title = "Expected Difference in Fantasy Points by Player",
+   #    x = "Expected Differences",
+    #   y = "Player") +
+  #theme_minimal()
+
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2012 <- total_roster %>% filter(season=="2012", team == "NO" | team == "DET" | team=="NE" | team == "DEN" | team == "WAS")
+wr_te_total_df_2012 <- inner_join(top5_2012, wr_te_total_df, by = "player_id")
+wr_te_total_df_2012 <- wr_te_total_df_2012 %>% filter(season.y == "2012")
+```
+
+```{r, echo=FALSE, message = FALSE}
+#ggplot(data = wr_te_total_df_2012, aes(x=diff, y=full_name, fill=team)) + 
+ # geom_bar(stat = "identity") + 
+  #labs(title = "Expected Difference in Fantasy Points by Player",
+   #    x = "Expected Differences",
+    #   y = "Player") +
+  #theme_minimal()
+
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2013 <- total_roster %>% filter(season=="2013", team == "NO" | team == "GB" | team=="PHI" | team == "DEN" | team == "SD")
+wr_te_total_df_2013 <- inner_join(top5_2013, wr_te_total_df, by = "player_id")
+wr_te_total_df_2013 <- wr_te_total_df_2013 %>% filter(season.y == "2013")
+```
+
+```{r, echo=FALSE, message = FALSE}
+#ggplot(data = wr_te_total_df_2013, aes(x=diff, y=full_name, fill=team)) + 
+ # geom_bar(stat = "identity") + 
+  #labs(title = "Expected Difference in Fantasy Points by Player",
+   #    x = "Expected Differences",
+    #   y = "Player") +
+  #theme_minimal()
+
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2014 <- total_roster %>% filter(season=="2014", team == "NO" | team == "IND" | team=="PHI" | team == "DEN" | team == "PIT")
+wr_te_total_df_2014 <- inner_join(top5_2014, wr_te_total_df, by = "player_id")
+wr_te_total_df_2014 <- wr_te_total_df_2014 %>% filter(season.y == "2014")
+```
+
+```{r, echo = FALSE, message = FALSE}
+# ggplot(data = wr_te_total_df_2014, aes(x=diff, y=reorder(full_name.x, diff), fill=team)) + 
+  # geom_bar(stat = "identity") + 
+ #  scale_fill_brewer(palette = "Set1") +
+ #  labs(title = "Expected Difference in Fantasy Points by Player",
+    #    x = "Expected Differences",
+   #     y = "Player") +
+  # theme_minimal()
+
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+#team_colors_2014 <- c("DEN" = "#FB4F14",  # Team A color
+ #             "IND" = "#003D79" ,
+  #               "NO" = "#D3BC8D", 
+   #               "PHI" = "#004C54",
+    #             "PIT" = "#FFB612"
+#)
+# plot_ly(wr_te_total_df_2014, x = ~diff, y = ~reorder(full_name.x, diff), type = "bar", color = ~team, colors = team_colors_2014,  text = ~paste("Player:", full_name.x, "<br>", "Differences:", diff, "<br>", "Team:", team, "<br>", "Total Points:",  total_fantasy_points)) %>%
+ #  layout(title = "2014 Differences in Fantasy Points for top 5 offensive teams",
+       #   xaxis = list(title = "Difference in Expected vs. Actual Points"),
+        # yaxis = list(title = "Player"),
+        #  barmode = "group")  
+  #layout(plot_bgcolor = "rgba(0,0,0,0)", 
+         #paper_bgcolor = "rgba(0,0,0,0)"  
+        # marker = list(color = ~factor(team, levels = names(team_colors)), colors = team_colors))  
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2019 <- total_roster %>% filter(season=="2019", team == "DAL" | team == "BAL" | team=="TB" | team == "SF" | team == "ATL")
+wr_te_total_df_2019 <- inner_join(top5_2019, wr_te_total_df, by = "player_id")
+wr_te_total_df_2019 <- wr_te_total_df_2019 %>% filter(season.y == "2019")
+```
+
+```{r, echo = FALSE}
+team_colors_2019 <- c("BAL" = "#241773",
+                 "TB" = "#d50a0a" ,
+                 "SF" = "#AA0000", 
+                 "DAL" = "#869397",
+                 "ATL" = "#a71930"
+)
+plot_ly(wr_te_total_df_2019, x = ~diff, y = ~reorder(full_name.x, diff), type = "bar", color = ~team, colors = team_colors_2019, text = ~paste("Player:", full_name.x, "<br>", "Differences:", diff, "<br>", "Team:", team, "<br>", "Total Points:", total_fantasy_points)) %>%
+  layout(title = "2019 Differences in Fantasy Points for top 5 offensive teams",
+         xaxis = list(title = "Difference in Expected vs. Actual Points"),
+         yaxis = list(title = "Player"),
+         barmode = "group")  
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2020 <- total_roster %>% filter(season=="2020", team == "GB" | team == "KC" | team=="TEN" | team == "BUF" | team == "MIN")
+wr_te_total_df_2020 <- inner_join(top5_2020, wr_te_total_df, by = "player_id")
+wr_te_total_df_2020 <- wr_te_total_df_2020 %>% filter(season.y == "2020")
+```
+
+```{r, echo = FALSE}
+team_colors_2020 <- c("GB" = "#203731",
+                 "KC" = "#e31837" ,
+                 "TEN" = "#002244", 
+                 "BUF" = "#00338d",
+                 "MIN" = "#4f2683"
+)
+plot_ly(wr_te_total_df_2020, x = ~diff, y = ~reorder(full_name.x, diff), type = "bar", color = ~team, colors = team_colors_2020, text = ~paste("Player:", full_name.x, "<br>", "Differences:", diff, "<br>", "Team:", team, "<br>", "Total Points:", total_fantasy_points)) %>%
+  layout(title = "2020 Differences in Fantasy Points for top 5 offensive teams",
+         xaxis = list(title = "Difference in Expected vs. Actual Points"),
+         yaxis = list(title = "Player"),
+         barmode = "group")  
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2021 <- total_roster %>% filter(season=="2021", team == "DAL" | team == "KC" | team=="TB" | team == "BUF" | team == "LAC")
+#top5_2021 <- top5_2021%>% rename(player_id = gsis_id)
+wr_te_total_df_2021 <- inner_join(top5_2021, wr_te_total_df, by = "player_id")
+wr_te_total_df_2021 <- wr_te_total_df_2021 %>% filter(season.y == "2021")
+```
+
+```{r, echo = FALSE}
+team_colors_2021 <- c("DAL" = "#869397",
+                 "KC" = "#e31837" ,
+                 "TB" = "#d50a0a", 
+                 "BUF" = "#00338d",
+                 "LAC" = "#002244"
+)
+plot_ly(wr_te_total_df_2021, x = ~diff, y = ~reorder(full_name.x, diff), type = "bar", color = ~team, colors = team_colors_2021, text = ~paste("Player:", full_name.x, "<br>", "Differences:", diff, "<br>", "Team:", team, "<br>", "Total Points:", total_fantasy_points)) %>%
+  layout(title = "2021 Differences in Fantasy Points for top 5 offensive teams",
+         xaxis = list(title = "Difference in Expected vs. Actual Points"),
+         yaxis = list(title = "Player"),
+         barmode = "group")  
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2022 <- total_roster %>% filter(season=="2022", team == "KC" | team == "PHI" | team=="DET" | team == "BUF" | team == "SF")
+wr_te_total_df_2022 <- inner_join(top5_2022, wr_te_total_df, by = "player_id")
+wr_te_total_df_2022 <- wr_te_total_df_2022 %>% filter(season.y == "2022")
+```
+
+```{r, echo = FALSE}
+team_colors_2022 <- c("PHI" = "#004953",
+                 "KC" = "#e31837" ,
+                 "DET" = "#0076B6", 
+                 "BUF" = "#00338D",
+                 "SF" = "#AA0000"
+)
+plot_ly(wr_te_total_df_2022, x = ~diff, y = ~reorder(full_name.x, diff), type = "bar", color = ~team, colors = team_colors_2022, text = ~paste("Player:", full_name.x, "<br>", "Differences:", diff, "<br>", "Team:", team, "<br>", "Total Points:", total_fantasy_points)) %>%
+  layout(title = "2022 Differences in Fantasy Points for top 5 offensive teams",
+         xaxis = list(title = "Difference in Expected vs. Actual Points"),
+         yaxis = list(title = "Player"),
+         barmode = "group")  
+```
+
+```{r, echo = FALSE, message = FALSE}
+top5_2023 <- total_roster %>% filter(season=="2023", team == "DET" | team == "MIA" | team=="SF" | team == "DAL" | team == "BUF")
+wr_te_total_df_2023 <- inner_join(top5_2023, wr_te_total_df, by = "player_id")
+wr_te_total_df_2023 <- wr_te_total_df_2023 %>% filter(season.y == "2023")
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+#ggplot(data = wr_te_total_df_2023, aes(x=diff, y=reorder(full_name.x, diff), fill=team)) + 
+ # geom_bar(stat = "identity") + 
+  #scale_fill_brewer(palette = "Set1") +
+  #labs(title = "Expected Difference in Fantasy Points by Player",
+ #      x = "Expected Differences",
+  #     y = "Player") +
+  #theme_minimal()
+
+```
+
+```{r, echo = FALSE}
+team_colors_2023 <- c("MIA" = "#008E97",
+                 "DET" = "#0076B6" ,
+                 "SF" = "#AA0000", 
+                 "DAL" = "#869397",
+                 "BUF" = "#00338D"
+)
+plot_ly(wr_te_total_df_2023, x = ~diff, y = ~reorder(full_name.x, diff), type = "bar", color = ~team, colors = team_colors_2023, text = ~paste("Player:", full_name.x, "<br>", "Differences:", diff, "<br>", "Team:", team, "<br>", "Total Points:", total_fantasy_points)) %>%
+  layout(title = "2023 Differences in Fantasy Points for top 5 offensive teams",
+         xaxis = list(title = "Difference in Expected vs. Actual Points"),
+         yaxis = list(title = "Player"),
+         barmode = "group")  
+```
+
+According to the data, the highest performing fantasy players on the top 5 offenses in the past 5 years generally are the number one option on that specific team. On any team with a high performing offense, going after their best option, e.g. Tyreek Hill or Ceedee Lamb will have high dividends despite a higher price point. Even with producing upwards of 300 points, they still had very high differences in expected vs. actual, being in the top quartile.  For players with less targest, situational plays may make them more likely candidates for a week plug-in game or a bye-week substitution. The one outlier in this data is the 2021 year which could be attributed to a lack of large-name skill position players on the teams which were leading the team in total offense, a more balanced attack. This was the only year which truly appeared to have more players underperform, although many of those were under 100 total fantasy points. Generally, reaching higher for skill position players on a good offense will pay higher dividends as they will outperform their expected points, even at a higher buying point such as a top 3 round pick. 
