@@ -36,11 +36,11 @@ body {
 }
 
 .dark {
-   --clr-bg: #030637;
-  --clr-bg-alt: #070A52;
-  --clr-fg: #720455;
-  --clr-fg-alt: #DA0C81;
-  --clr-primary: #610C9F;
+   --clr-bg: #0474038;
+  --clr-bg-alt: #b5aea6;
+  --clr-fg: #87995c;
+  --clr-fg-alt: #765c48;
+  --clr-primary: #814440;
   --shadow: rgb(97, 12, 159, 0.5) 0px 10px 36px 0px,
     rgba(97, 12, 159, 0.06) 0px 0px 0px 1px;
 }
