@@ -62,7 +62,13 @@
         <h2 class="about__role">Collaborative Data Science project focused on Humanitarian Aid</h2>
         <p class="about__desc">
          Collaborative group project using Shannon entropy as a measure of disorder to predict which refugee camps would benefit from 
-        receiving aid from humanitarian organizations. 
+        receiving aid from humanitarian organizations. To do this, we first quantified the number of needs of each camp based on the data
+          set. We then arbitratily scaled each need by relative importance, something an individual organization could do in according
+          with what needs they would be able to meet and thus which ones should be weighted higher in the model. We also accounted for additonal
+          factors such as the number of young children in a camp which may cause an organization to prioritize one camp over another with
+          a similar amount of need. We then took the camps
+          that had the highest overall needs according to the scale and plotted this on an interactive map so organizations based in different
+          locations could see which camps close to their location had a high number of needs which they could accomodate. 
 
         </p>
       </div>
